@@ -1,8 +1,13 @@
+## Additional Coding Guidelines
+
+- Always keep code organized and reusable as much as possible, but avoid over-engineering if not needed.
+- Do not use too many comments; only add comments when truly necessary to avoid cluttering the codebase.
+
 ## Project Implementation Plan
 
 ### 1. Requirements & Architecture
 
-- Electron app (cross-platform desktop)
+- Cross-platform desktop app (Electron), web client (shared frontend code), and backend server
 - TypeScript for type safety and maintainability
 - Modular, abstracted architecture for easy swapping of components (audio source, STT, LLM, etc.)
 - MVP: Record audio from mic, transcribe, summarize, display results
@@ -16,7 +21,9 @@
 - **LLM Summarization Abstraction**
   - Interface for LLMs (local, OpenAI, etc.)
 - **UI Layer**
-  - Electron/React/HTML for user interaction
+  - React/HTML for user interaction (used in both Electron and web client)
+- **Server Layer**
+  - Node.js/TypeScript backend for handling API requests, audio processing, STT, and LLM integration
 - **State Management**
   - Store transcripts, notes, and meeting metadata
 
