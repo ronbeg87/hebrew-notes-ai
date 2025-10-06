@@ -6,6 +6,12 @@ out/
 *.log
 *.tsbuildinfo
 
+# Server
+server/node_modules/
+server/dist/
+server/build/
+server/out/
+
 # Vite
 frontend/.vite/
 frontend/dist/
