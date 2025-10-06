@@ -4,3 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveTempFile: (buffer) => ipcRenderer.invoke('save-temp-file', buffer),
   saveFile: (buffer, defaultFileName) => ipcRenderer.invoke('save-file', buffer, defaultFileName),
 });
+
+contextBridge.exposeInMainWorld('whisper', {
+  transcribe: (filePath, options) => ipcRenderer.invoke('whisper-transcribe', filePath, options),
+});

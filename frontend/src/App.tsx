@@ -89,7 +89,7 @@ function App() {
 
   return (
     <div style={{ maxWidth: 400, margin: '2rem auto', textAlign: 'center' }}>
-      <h1>BlueAI Meeting Assistant</h1>
+      <h1>Hebrew Meeting Assistant</h1>
       <div style={{ margin: '2rem 0' }}>
         <button onClick={handleStart} disabled={recording} style={{ marginRight: 8 }}>
           Start Recording

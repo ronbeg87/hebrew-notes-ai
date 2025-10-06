@@ -22,7 +22,7 @@ ipcMain.handle('save-temp-file', async (event, blob) => {
   // Electron does not support direct Blob transfer; expect ArrayBuffer
   const buffer = Buffer.from(blob);
   const tempDir = os.tmpdir();
-  const filePath = path.join(tempDir, `blueai_recording_${Date.now()}.wav`);
+  const filePath = path.join(tempDir, `./playground/recording_${Date.now()}.wav`);
   fs.writeFileSync(filePath, buffer);
   return filePath;
 });
@@ -57,9 +57,8 @@ app.on('window-all-closed', function () {
 ipcMain.handle('whisper-transcribe', async (event, audioFilePath) => {
   return new Promise((resolve, reject) => {
     // Replace 'whisper.cpp' and args with your actual binary and model path
-    const whisperPath = 'whisper.cpp'; // Path to whisper.cpp binary
-    const modelPath = 'models/ggml-base.en.bin'; // Path to model file
-    const args = ['-m', modelPath, '-f', audioFilePath, '-otxt'];
+    const whisperPath = 'whisper'; // Path to whisper.cpp binary
+    const args = ['--language', "he", audioFilePath];
     const proc = spawn(whisperPath, args);
     let transcript = '';
     proc.stdout.on('data', (data) => {
