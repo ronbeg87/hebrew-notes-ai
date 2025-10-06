@@ -2,12 +2,20 @@
 import { useRef, useState } from 'react';
 import { MicrophoneAudioSource } from './microphoneAudioSource';
 import { WhisperCppTranscriber } from './whisperCppTranscriber';
+import RecorderControls from './components/RecorderControls';
+import SaveLocallyCheckbox from './components/SaveLocallyCheckbox';
+import PlaybackDebug from './components/PlaybackDebug';
+import TranscriptDisplay from './components/TranscriptDisplay';
+import { float32ToWavBlob } from './helpers/float32ToWavBlob';
+import { appBackground, card, title, status } from './App.styles';
 
 
 function App() {
   const [recording, setRecording] = useState(false);
   const [audioStatus, setAudioStatus] = useState('Idle');
+  const [sending, setSending] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [transcript, setTranscript] = useState<string>('');
   const [transcribing, setTranscribing] = useState(false);
   const [saveLocally, setSaveLocally] = useState(false);
@@ -48,6 +56,7 @@ function App() {
     if (allChunks.length > 0) {
       const wavBlob = float32ToWavBlob(allChunks, 44100); // 44.1kHz default
       setAudioUrl(URL.createObjectURL(wavBlob));
+      setAudioBlob(wavBlob);
 
       // Optionally save the file locally
       if (saveLocally) {
@@ -57,11 +66,35 @@ function App() {
             const arrayBuffer = await wavBlob.arrayBuffer();
             await window.electronAPI.saveFile(arrayBuffer, 'recording.wav');
           } catch (err) {
-            // Optionally show error to user
             alert('Failed to save file locally: ' + (err as Error).message);
           }
+        } else if ('showSaveFilePicker' in window) {
+          // Browser File System Access API
+          try {
+            // @ts-ignore
+            const handle = await window.showSaveFilePicker({
+              suggestedName: 'recording.wav',
+              types: [{
+                description: 'WAV audio',
+                accept: { 'audio/wav': ['.wav'] }
+              }]
+            });
+            const writable = await handle.createWritable();
+            await writable.write(wavBlob);
+            await writable.close();
+            alert('File saved successfully.');
+          } catch (err) {
+            alert('Failed to save file: ' + (err as Error).message);
+          }
         } else {
-          alert('Local file saving is not implemented in the preload script.');
+          // Fallback: download via anchor
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(wavBlob);
+          a.download = 'recording.wav';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          alert('File download started.');
         }
       }
 
@@ -88,87 +121,35 @@ function App() {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: '2rem auto', textAlign: 'center' }}>
-      <h1>Hebrew Meeting Assistant</h1>
-      <div style={{ margin: '2rem 0' }}>
-        <button onClick={handleStart} disabled={recording} style={{ marginRight: 8 }}>
-          Start Recording
-        </button>
-        <button onClick={handleStop} disabled={!recording}>
-          Stop Recording
-        </button>
-      </div>
-      <div style={{ marginBottom: 16 }}>
-        <label>
-          <input
-            type="checkbox"
-            checked={saveLocally}
-            onChange={e => setSaveLocally(e.target.checked)}
-            style={{ marginRight: 6 }}
+    <div style={appBackground}>
+      <div style={card}>
+        <h1 style={title}>Hebrew Meeting Assistant</h1>
+        <RecorderControls
+          recording={recording}
+          onStart={handleStart}
+          onStop={handleStop}
+        />
+        <SaveLocallyCheckbox
+          checked={saveLocally}
+          onChange={setSaveLocally}
+        />
+        <div style={status}>Status: {audioStatus}</div>
+        {audioUrl && (
+          <PlaybackDebug
+            audioUrl={audioUrl}
+            audioBlob={audioBlob}
+            sending={sending}
+            setSending={setSending}
+            setTranscript={setTranscript}
           />
-          Save file locally after recording
-        </label>
-      </div>
-      <div>Status: {audioStatus}</div>
-      {audioUrl && (
-        <div style={{ marginTop: 24 }}>
-          <h3>Playback (Debug)</h3>
-          <audio controls src={audioUrl} />
-        </div>
-      )}
-      <div style={{ marginTop: 24 }}>
-        <h3>Transcript</h3>
-        {transcribing ? <div>Transcribing...</div> : <pre style={{textAlign: 'left', whiteSpace: 'pre-wrap'}}>{transcript}</pre>}
+        )}
+        <TranscriptDisplay
+          transcribing={transcribing}
+          transcript={transcript}
+        />
       </div>
     </div>
   );
-}
-
-// Helper: Convert Float32Array chunks to WAV Blob
-function float32ToWavBlob(chunks: Float32Array[], sampleRate: number): Blob {
-  // Flatten all chunks
-  const length = chunks.reduce((acc, arr) => acc + arr.length, 0);
-  const buffer = new Float32Array(length);
-  let offset = 0;
-  for (const arr of chunks) {
-    buffer.set(arr, offset);
-    offset += arr.length;
-  }
-  // Convert to 16-bit PCM
-  const pcm = new Int16Array(buffer.length);
-  for (let i = 0; i < buffer.length; i++) {
-    let s = Math.max(-1, Math.min(1, buffer[i]));
-    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-  }
-  // WAV header
-  const wavBuffer = new ArrayBuffer(44 + pcm.length * 2);
-  const view = new DataView(wavBuffer);
-  // RIFF identifier 'RIFF'
-  writeString(view, 0, 'RIFF');
-  view.setUint32(4, 36 + pcm.length * 2, true);
-  writeString(view, 8, 'WAVE');
-  writeString(view, 12, 'fmt ');
-  view.setUint32(16, 16, true); // Subchunk1Size
-  view.setUint16(20, 1, true); // AudioFormat (PCM)
-  view.setUint16(22, 1, true); // NumChannels
-  view.setUint32(24, sampleRate, true); // SampleRate
-  view.setUint32(28, sampleRate * 2, true); // ByteRate
-  view.setUint16(32, 2, true); // BlockAlign
-  view.setUint16(34, 16, true); // BitsPerSample
-  writeString(view, 36, 'data');
-  view.setUint32(40, pcm.length * 2, true);
-  // PCM samples
-  let idx = 44;
-  for (let i = 0; i < pcm.length; i++, idx += 2) {
-    view.setInt16(idx, pcm[i], true);
-  }
-  return new Blob([wavBuffer], { type: 'audio/wav' });
-}
-
-function writeString(view: DataView, offset: number, str: string) {
-  for (let i = 0; i < str.length; i++) {
-    view.setUint8(offset + i, str.charCodeAt(i));
-  }
 }
 
 export default App;
