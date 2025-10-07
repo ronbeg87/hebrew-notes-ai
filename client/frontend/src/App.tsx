@@ -3,8 +3,8 @@ import { useRef, useState } from 'react';
 import { MicrophoneAudioSource } from './microphoneAudioSource';
 import RecorderControls from './components/RecorderControls';
 import SaveLocallyCheckbox from './components/SaveLocallyCheckbox';
-import TranscribeAudio from './components/PlaybackDebug';
-import TranscriptDisplay from './components/TranscriptDisplay';
+import TranscribeAudio from './components/TranscribeAudio';
+import TranscriptNotesTabs from './components/TranscriptNotesTabs';
 import { float32ToWavBlob } from './helpers/float32ToWavBlob';
 import { appBackground, card, title, status } from './App.styles';
 import FileDropTranscriber from './components/FileDropTranscriber';
@@ -13,10 +13,10 @@ import FileDropTranscriber from './components/FileDropTranscriber';
 function App() {
   const [recording, setRecording] = useState(false);
   const [audioStatus, setAudioStatus] = useState('Idle');
-  const [sending, setSending] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [transcript, setTranscript] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
   const [saveLocally, setSaveLocally] = useState(false);
   const [droppedFile, setDroppedFile] = useState<File | null>(null);
   const audioSourceRef = useRef<MicrophoneAudioSource | null>(null);
@@ -125,13 +125,14 @@ function App() {
           <TranscribeAudio
             audioUrl={droppedFile ? URL.createObjectURL(droppedFile) : audioUrl!}
             audioBlob={droppedFile ? droppedFile : audioBlob}
-            sending={sending}
-            setSending={setSending}
             setTranscript={setTranscript}
+            setNotes={setNotes}
+            transcript={transcript}
           />
         )}
-        <TranscriptDisplay
+        <TranscriptNotesTabs
           transcript={transcript}
+          notes={notes}
         />
       </div>
     </div>

@@ -1,8 +1,13 @@
 import express, { Request, Response } from "express";
+import dotenv from "dotenv";
 import { allowCors } from "./cors";
 import multer from "multer";
 import { getTranscriber } from "./transcriber/index";
 import type { Transcriber } from "./transcriber/Transcriber";
+import { NoteGenerator } from "./noteGenerator/NoteGenerator";
+import { getNoteGenerator } from "./noteGenerator";
+
+dotenv.config();
 
 const app = express();
 app.use(allowCors);
@@ -17,6 +22,9 @@ const upload = multer({
 // Choose transcriber implementation here
 // const transcriber: Transcriber = getTranscriber("mock");
 const transcriber: Transcriber = getTranscriber("whisper");
+
+// const noteGenerator: NoteGenerator = getNoteGenerator("mock");
+const noteGenerator: NoteGenerator = getNoteGenerator("llm");
 
 app.post(
   "/api/transcribe",
@@ -36,6 +44,17 @@ app.post(
     }
   }
 );
+
+app.use(express.json());
+
+app.post("/api/notes", async (req: Request, res: Response) => {
+  const { transcript } = req.body;
+  // For now, return mock notes
+
+  res.json({
+    notes: await noteGenerator.generateNotes(transcript),
+  });
+});
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

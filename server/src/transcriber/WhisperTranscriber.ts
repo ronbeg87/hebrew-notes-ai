@@ -11,7 +11,7 @@ export class WhisperTranscriber implements Transcriber {
     const tempAudioPath = join("./", `${baseFilename}.wav`);
     const tempOutputPath = join("./", `${baseFilename}.txt`);
     await writeFile(tempAudioPath, audioBuffer);
-    const whisperCmd = `whisper \"${tempAudioPath}\" --language he -f txt --fp16 False`;
+    const whisperCmd = `whisper \"${tempAudioPath}\" --language he -f txt --fp16 False --model tiny`;
     console.log("Executing command:", whisperCmd);
     const transcript = await new Promise<string>((resolve, reject) => {
       exec(
