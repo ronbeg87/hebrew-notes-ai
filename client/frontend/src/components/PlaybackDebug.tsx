@@ -11,9 +11,6 @@ interface TranscribeAudioProps {
   setTranscript: (transcript: string) => void;
 }
 
-
-
-
 const TranscribeAudio: React.FC<TranscribeAudioProps> = ({ audioUrl, audioBlob, sending, setSending, setTranscript }) => {
   // Handler for transcribing audio
   const handleTranscribe = async () => {

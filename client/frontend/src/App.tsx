@@ -7,6 +7,7 @@ import TranscribeAudio from './components/PlaybackDebug';
 import TranscriptDisplay from './components/TranscriptDisplay';
 import { float32ToWavBlob } from './helpers/float32ToWavBlob';
 import { appBackground, card, title, status } from './App.styles';
+import FileDropTranscriber from './components/FileDropTranscriber';
 
 
 function App() {
@@ -17,8 +18,10 @@ function App() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [transcript, setTranscript] = useState<string>('');
   const [saveLocally, setSaveLocally] = useState(false);
+  const [droppedFile, setDroppedFile] = useState<File | null>(null);
   const audioSourceRef = useRef<MicrophoneAudioSource | null>(null);
   const audioChunksRef = useRef<Float32Array[]>([]);
+
 
   const handleStart = async () => {
     audioChunksRef.current = [];
@@ -112,10 +115,16 @@ function App() {
           onChange={setSaveLocally}
         />
         <div style={status}>Status: {audioStatus}</div>
-        {audioUrl && (
+        <FileDropTranscriber
+          setTranscript={setTranscript}
+          setStatus={setAudioStatus}
+          setDroppedFile={setDroppedFile}
+          droppedFile={droppedFile}
+        />
+        {(audioUrl || droppedFile) && (
           <TranscribeAudio
-            audioUrl={audioUrl}
-            audioBlob={audioBlob}
+            audioUrl={droppedFile ? URL.createObjectURL(droppedFile) : audioUrl!}
+            audioBlob={droppedFile ? droppedFile : audioBlob}
             sending={sending}
             setSending={setSending}
             setTranscript={setTranscript}
