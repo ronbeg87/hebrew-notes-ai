@@ -1,10 +1,9 @@
 
 import { useRef, useState } from 'react';
 import { MicrophoneAudioSource } from './microphoneAudioSource';
-import { WhisperCppTranscriber } from './whisperCppTranscriber';
 import RecorderControls from './components/RecorderControls';
 import SaveLocallyCheckbox from './components/SaveLocallyCheckbox';
-import PlaybackDebug from './components/PlaybackDebug';
+import TranscribeAudio from './components/PlaybackDebug';
 import TranscriptDisplay from './components/TranscriptDisplay';
 import { float32ToWavBlob } from './helpers/float32ToWavBlob';
 import { appBackground, card, title, status } from './App.styles';
@@ -17,7 +16,6 @@ function App() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [transcript, setTranscript] = useState<string>('');
-  const [transcribing, setTranscribing] = useState(false);
   const [saveLocally, setSaveLocally] = useState(false);
   const audioSourceRef = useRef<MicrophoneAudioSource | null>(null);
   const audioChunksRef = useRef<Float32Array[]>([]);
@@ -97,26 +95,6 @@ function App() {
           alert('File download started.');
         }
       }
-
-      // Save the blob to a temp file and transcribe
-      setTranscribing(true);
-      setTranscript('');
-      try {
-        // Save blob to a temp file using Electron's file system (via preload/main process)
-        // This requires a preload API to save the file and return the path
-        if (window.electronAPI && typeof window.electronAPI.saveTempFile === 'function') {
-          const arrayBuffer = await wavBlob.arrayBuffer();
-          const filePath = await window.electronAPI.saveTempFile(arrayBuffer);
-          const whisper = new WhisperCppTranscriber();
-          const result = await whisper.transcribe(filePath);
-          setTranscript(result);
-        } else {
-          setTranscript('Transcription integration with file system is not yet implemented.');
-        }
-      } catch (err) {
-        setTranscript('Transcription failed: ' + (err as Error).message);
-      }
-      setTranscribing(false);
     }
   };
 
@@ -135,7 +113,7 @@ function App() {
         />
         <div style={status}>Status: {audioStatus}</div>
         {audioUrl && (
-          <PlaybackDebug
+          <TranscribeAudio
             audioUrl={audioUrl}
             audioBlob={audioBlob}
             sending={sending}
@@ -144,7 +122,6 @@ function App() {
           />
         )}
         <TranscriptDisplay
-          transcribing={transcribing}
           transcript={transcript}
         />
       </div>

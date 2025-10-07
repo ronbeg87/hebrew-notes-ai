@@ -1,4 +1,9 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { spawn } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
 // IPC handler to save a file to a user-selected location
 ipcMain.handle('save-file', async (event, buffer, defaultFileName) => {
   const win = BrowserWindow.getFocusedWindow();
@@ -10,21 +15,13 @@ ipcMain.handle('save-file', async (event, buffer, defaultFileName) => {
     ]
   });
   if (!canceled && filePath) {
+    fs.mkdir(path.dirname(filePath), { recursive: true }, (err) => {
+      if (err) {
+        console.error('Error creating directory:', err);
+      }
+    });
     fs.writeFileSync(filePath, Buffer.from(buffer));
   }
-});
-const { spawn } = require('child_process');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-// IPC handler to save a Blob as a temp WAV file and return the file path
-ipcMain.handle('save-temp-file', async (event, blob) => {
-  // Electron does not support direct Blob transfer; expect ArrayBuffer
-  const buffer = Buffer.from(blob);
-  const tempDir = os.tmpdir();
-  const filePath = path.join(tempDir, `./playground/recording_${Date.now()}.wav`);
-  fs.writeFileSync(filePath, buffer);
-  return filePath;
 });
 
 function createWindow() {
